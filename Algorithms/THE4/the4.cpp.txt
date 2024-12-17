@@ -1,0 +1,47 @@
+#include "the4.h"
+
+unsigned int alice_cutting_cake(const unsigned short cake_width,
+                                const unsigned short cake_height,
+                                bool **perfect_cuts) {
+    unsigned int dp[cake_width + 1][cake_height + 1];
+    
+    int hor_cut, ver_cut;
+    
+    unsigned int hor, ver;
+    
+    
+    
+    for (int i = 0; i <= cake_width; ++i) {
+        for (int j = 0; j <= cake_height; ++j) {
+            dp[i][j] = i * j;
+        }
+    }
+
+    std::vector<std::pair<int, int>> perfect_positions;
+    for (int i = 1; i <= cake_width; ++i) {
+        for (int j = 1; j <= cake_height; ++j) {
+            if (perfect_cuts[i][j]) {
+                perfect_positions.push_back(std::make_pair(i, j));
+            }
+        }
+    }
+
+    for (int i = 1; i <= cake_width; ++i) {
+        for (int j = 1; j <= cake_height; ++j) {
+            for ( int k = 0; k < perfect_positions.size(); k++) {
+                hor_cut = perfect_positions[k].first;
+                ver_cut = perfect_positions[k].second;
+
+                if (hor_cut > i || ver_cut > j) {
+                    continue;
+                }
+
+                hor = dp[i - hor_cut][j] + dp[hor_cut][j - ver_cut];
+                ver = dp[i - hor_cut][ver_cut] + dp[i][j - ver_cut];
+                dp[i][j] = std::min(dp[i][j], std::min(hor, ver));
+            }
+        }
+    }
+
+    return dp[cake_width][cake_height];
+}

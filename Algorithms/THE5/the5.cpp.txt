@@ -1,0 +1,161 @@
+#include "the5.h"
+#include <vector>
+
+void findSCC(int node, int& currentIndex, int& sccCount,
+             std::vector<int>& index, std::vector<int>& lowlink, 
+             std::vector<int>& sccId, std::vector<bool>& onStack, 
+             std::vector<int>& stack, std::vector<std::vector<int>>& sccs, 
+             const std::vector<std::vector<bool>>& graph) {
+    
+    index[node] = currentIndex;
+    lowlink[node] = currentIndex;
+    currentIndex++;
+    stack.push_back(node);
+    onStack[node] = true;
+
+   
+    int graphSize = graph.size();
+    for (int neighbor = 0; neighbor < graphSize; neighbor++) {
+        if (graph[node][neighbor]) { 
+            if (index[neighbor] == -1) { 
+                findSCC(neighbor, currentIndex, sccCount, index, lowlink, sccId, onStack, stack, sccs, graph);
+                if (lowlink[node] > lowlink[neighbor]) {
+                    lowlink[node] = lowlink[neighbor];
+                }
+            } else if (onStack[neighbor]) { 
+                if (lowlink[node] > index[neighbor]) {
+                    lowlink[node] = index[neighbor];
+                }
+            }
+        }
+    }
+
+    
+    if (lowlink[node] == index[node]) {
+        std::vector<int> scc;
+        while (!stack.empty()) {
+            int member = stack.back();
+            stack.pop_back();
+            onStack[member] = false;
+            sccId[member] = sccCount;
+            scc.push_back(member);
+            if (member == node) {
+                break;
+            }
+        }
+
+        
+        int sccSize = scc.size();
+        for (int i = 0; i < sccSize - 1; i++) {
+            for (int j = 0; j < sccSize - i - 1; j++) {
+                if (scc[j] > scc[j + 1]) {
+                    int temp = scc[j];
+                    scc[j] = scc[j + 1];
+                    scc[j + 1] = temp;
+                }
+            }
+        }
+
+        sccs.push_back(scc);
+        sccCount++;
+    }
+}
+
+std::vector<std::vector<int>> find_work_order(const std::vector<std::vector<bool>>& dependencies) {
+    int size = dependencies.size();
+
+    
+    std::vector<int> index(size, -1);
+    std::vector<int> lowlink(size, -1);
+    std::vector<int> sccId(size, -1);
+    std::vector<std::vector<int>> sccs;
+    std::vector<int> stack;
+    std::vector<bool> onStack(size, false);
+    int currentIndex = 0;
+    int sccCount = 0;
+
+    
+    for (int node = 0; node < size; node++) {
+        if (index[node] == -1) {
+            findSCC(node, currentIndex, sccCount, index, lowlink, sccId, onStack, stack, sccs, dependencies);
+        }
+    }
+
+    
+    std::vector<std::vector<int>> condensedGraph(sccCount);
+    std::vector<int> inDegree(sccCount, 0);
+
+    for (int v = 0; v < size; v++) {
+        for (int w = 0; w < size; w++) {
+            if (dependencies[v][w] && sccId[v] != sccId[w]) {
+                
+                bool found = false;
+                for (int k = 0; k < condensedGraph[sccId[v]].size(); k++) {
+                    if (condensedGraph[sccId[v]][k] == sccId[w]) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    condensedGraph[sccId[v]].push_back(sccId[w]);
+                    inDegree[sccId[w]]++;
+                }
+            }
+        }
+    }
+
+    
+    std::vector<std::pair<int, int>> zeroInDegreeNodes;
+    for (int i = 0; i < sccCount; i++) {
+        if (inDegree[i] == 0) {
+            zeroInDegreeNodes.push_back(std::make_pair(sccs[i][0], i));
+        }
+    }
+
+    
+    int zeroSize = zeroInDegreeNodes.size();
+    for (int i = 0; i < zeroSize - 1; i++) {
+        for (int j = 0; j < zeroSize - i - 1; j++) {
+            if (zeroInDegreeNodes[j].first > zeroInDegreeNodes[j + 1].first) {
+                std::pair<int, int> temp = zeroInDegreeNodes[j];
+                zeroInDegreeNodes[j] = zeroInDegreeNodes[j + 1];
+                zeroInDegreeNodes[j + 1] = temp;
+            }
+        }
+    }
+
+    
+    std::vector<int> topologicalSort;
+    while (!zeroInDegreeNodes.empty()) {
+        std::pair<int, int> current = zeroInDegreeNodes.front();
+        zeroInDegreeNodes.erase(zeroInDegreeNodes.begin());
+        topologicalSort.push_back(current.second);
+
+        
+        for (int i = 0; i < condensedGraph[current.second].size(); i++) {
+            int neighbor = condensedGraph[current.second][i];
+            inDegree[neighbor]--;
+            if (inDegree[neighbor] == 0) {
+                zeroInDegreeNodes.push_back(std::make_pair(sccs[neighbor][0], neighbor));
+                
+                for (int a = 0; a < zeroInDegreeNodes.size() - 1; a++) {
+                    for (int b = 0; b < zeroInDegreeNodes.size() - a - 1; b++) {
+                        if (zeroInDegreeNodes[b].first > zeroInDegreeNodes[b + 1].first) {
+                            std::pair<int, int> temp = zeroInDegreeNodes[b];
+                            zeroInDegreeNodes[b] = zeroInDegreeNodes[b + 1];
+                            zeroInDegreeNodes[b + 1] = temp;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    
+    std::vector<std::vector<int>> result;
+    for (int i = 0; i < topologicalSort.size(); i++) {
+        result.push_back(sccs[topologicalSort[i]]);
+    }
+
+    return result;
+}

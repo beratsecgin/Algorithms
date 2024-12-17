@@ -1,0 +1,84 @@
+#include "the2.h"
+
+
+int get_index(const std::string &str, int start, int group_size) {
+    int index = 0;
+    int factor = 1;
+    for (int i = 0; i < group_size; ++i) {
+        int pos = start - i;
+        if (pos >= 0 && pos < str.length()) {
+            index += (str[pos] - 'A' + 1) * factor; 
+        }
+        factor *= 27;
+    }
+    return index;
+}
+
+long counting_sort(std::string *arr,int size, int group_size, bool ascending, int start) {
+    int num_buckets = 1;
+    for (int i = 0; i < group_size; ++i) {
+        num_buckets *= 27; 
+    }
+
+    int *count = new int[num_buckets]();
+    std::string *output = new std::string[size];
+    long iterations = 0;
+
+    
+    for (int i = 0; i < size; i++) {
+        int index = get_index(arr[i], start, group_size);
+        count[index]++;
+        iterations++;  
+    }
+
+    if(ascending){
+        for (int i = 1; i < num_buckets; i++) {
+        count[i] += count[i - 1];
+        iterations++;
+        }
+    }else{
+        for (int i = num_buckets - 2; i >= 0; i--) {
+            count[i] += count[i + 1];
+            iterations++;
+        }
+    }
+    
+    for (int i = size - 1; i >= 0; i--) {
+        int index = get_index(arr[i], start, group_size);
+        output[count[index] - 1] = arr[i];
+        count[index]--;
+        iterations++;
+    }
+
+    
+    for (int i = 0; i < size; i++) {
+        arr[i] = output[i];
+        iterations++;  
+    }
+
+    delete[] count;
+    delete[] output;
+    return iterations;
+}
+
+long multi_digit_string_radix_sort(std::string *arr, const int size, const bool ascending, const int group_size) {
+    long total_iterations = 0;
+    int max_length = 0;
+
+    for (int i = 0; i < size; ++i) {
+        max_length = std::max(max_length, (int)arr[i].length());
+    }
+    
+    int start;
+    
+    for (start = max_length - 1; start-group_size >= 0; start -= group_size) {
+        total_iterations += counting_sort(arr, size, group_size, ascending, start);
+    }
+    
+    if (start >= 0){
+        total_iterations += counting_sort(arr, size, start+1, ascending, start);
+    }
+    
+    
+    return total_iterations;
+}

@@ -1,0 +1,40 @@
+#include "the3.h"
+
+// DO NOT CHANGE ABOVE THIS LINE!
+// you may implement helper functions below
+
+int find_min_cost(const std::vector<std::vector<int>>& costs, int N) {
+  
+   
+    int mc=100000000;
+    int nc;
+    std::vector<std::vector<int>> arr(N-1, std::vector<int>(6, mc)); 
+
+    
+    for (int j = 0; j < 6; ++j) {
+        arr[0][j] = costs[0][j];
+    }
+
+    
+    for (int i = 1; i < N-1; ++i) {
+        for (int j = 0; j < 6; ++j) { 
+            for (int k = 0; k < 6; ++k) {
+                if ((j>=4 and k>=4) or (j>=2 and j<4 and k>=2 and k<4 ) or (j<2 and k<2 and j!=k )) { 
+                    continue;
+                }else{
+                    nc= arr[i - 1][k] + costs[i][j];
+                    if (nc < arr[i][j]) {
+                    arr[i][j] = nc;
+                }
+                }
+            }
+        }
+    }
+    for (int j = 0; j < 6; ++j) {
+        if (arr[N-2][j] < mc) {
+            mc = arr[N-2][j];
+        }
+    }
+
+    return mc;
+}

@@ -1,0 +1,85 @@
+#include "the6.h"
+
+// do not add extra libraries here
+
+#define INF 1000000000
+
+std::vector< std::vector<float> > get_friendship_scores(const std::vector< std::vector< std::pair<int, int> > >& network){
+    
+    //we are gonna use floyd-warshall algo
+    
+    int size =network.size();
+    
+    std::vector<std::vector<int>> distance(size, std::vector<int>(size, INF));
+     
+    int self_weight = INF;
+     
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < network[i].size(); j++) {
+            int target = network[i][j].first;
+            int weight = network[i][j].second;
+            if (weight < distance[i][target]) {
+                distance[i][target] = weight; 
+            }
+            if (target==i and weight < self_weight) {
+                self_weight = weight; 
+            }
+            
+        }
+        if (self_weight != INF) {
+            distance[i][i] = self_weight;
+        }
+        
+    }
+
+    int new_dist;
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            if (distance[j][i] == INF) continue;
+            
+            for (int k = 0; k < size; k++) {
+                
+                if (distance[i][k] == INF) continue;
+                new_dist = distance[j][i] + distance[i][k];
+                if (new_dist < distance[j][k]) {
+                    distance[j][k] = new_dist;
+                }
+            }
+        }
+    }
+    
+    std::vector<int> SP1(size, INF);
+    for (int i = 0; i < size; i++) {
+        int min = INF;
+        for (int j = 0; j < size; j++) {
+            if (distance[i][j] < min) {
+                min = distance[i][j];
+            }
+        }
+        SP1[i] = min;
+    }
+    
+    std::vector<std::vector<float>> result(size, std::vector<float>(size, 0));
+    
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            int distance1 = distance[i][j]; 
+            int distance2 = distance[j][i]; 
+            bool ij = (distance1 != INF);
+            bool ji = (distance2 != INF);
+
+            if (!ij && !ji) {
+                result[i][j] = -1;
+            } else if (ij && ji) {
+                int sp1_i = SP1[i];
+                int sp1_j = SP1[j];
+                float value = ((float)sp1_i / (float)distance1) * ((float)sp1_j / (float)distance2);
+                result[i][j] = value;
+            } else {
+                result[i][j] = 0;
+            }
+        }
+    }
+
+    return result;
+}
